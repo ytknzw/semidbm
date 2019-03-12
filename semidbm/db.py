@@ -26,8 +26,9 @@ class _SemiDBM(object):
         does not exist it will be created.
 
     """
-    def __init__(self, dbdir, renamer, data_loader=None,
+    def __init__(self, dbdir, flag, renamer, data_loader=None,
                  verify_checksums=False):
+        self._flag = flag
         self._renamer = renamer
         self._data_loader = data_loader
         self._dbdir = dbdir
@@ -44,9 +45,10 @@ class _SemiDBM(object):
             os.makedirs(self._dbdir)
 
     def _load_db(self):
+        DATA_OPEN_FLAGS = os.O_RDONLY if self._flag == 'r' else compat.DATA_OPEN_FLAGS
         self._create_db_dir()
         self._index = self._load_index(self._data_filename)
-        self._data_fd = os.open(self._data_filename, compat.DATA_OPEN_FLAGS)
+        self._data_fd = os.open(self._data_filename, DATA_OPEN_FLAGS)
         self._current_offset = os.lseek(self._data_fd, 0, os.SEEK_END)
 
     def _load_index(self, filename):
@@ -352,12 +354,12 @@ def open(filename, flag='r', mode=0o666, verify_checksums=False):
     """
     kwargs = _create_default_params(verify_checksums=verify_checksums)
     if flag == 'r':
-        return _SemiDBMReadOnly(filename, **kwargs)
+        return _SemiDBMReadOnly(filename, flag, **kwargs)
     elif flag == 'c':
-        return _SemiDBM(filename, **kwargs)
+        return _SemiDBM(filename, flag, **kwargs)
     elif flag == 'w':
-        return _SemiDBMReadWrite(filename, **kwargs)
+        return _SemiDBMReadWrite(filename, flag, **kwargs)
     elif flag == 'n':
-        return _SemiDBMNew(filename, **kwargs)
+        return _SemiDBMNew(filename, flag, **kwargs)
     else:
         raise ValueError("flag argument must be 'r', 'c', 'w', or 'n'")
